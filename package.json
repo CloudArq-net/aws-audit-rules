@@ -1,0 +1,32 @@
+{
+  "name": "@cloudarq/aws-audit-rules",
+  "version": "0.1.0",
+  "description": "Client-side AWS audit rules \u2014 parse a paste of AWS CLI output and report only what that output can prove. No network, no dependencies.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": [
+    "src",
+    "RULES.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "vitest run"
+  },
+  "keywords": [
+    "aws",
+    "security-groups",
+    "audit",
+    "cspm",
+    "client-side"
+  ],
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cloudarq/aws-audit-rules"
+  },
+  "homepage": "https://cloudarq.net/tools/aws-auditor",
+  "author": "Abdallah Khaldi"
+}
