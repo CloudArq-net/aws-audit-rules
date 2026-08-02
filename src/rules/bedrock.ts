@@ -285,7 +285,7 @@ export function analyzeBedrock(input: BedrockInput): AnalysisResult {
         'DRAFT — and DRAFT changes the moment someone edits it in the console. ' +
         'Publishing a version gives you something to pin and something to roll ' +
         'back to.',
-      resource: `${guardrails.length} guardrails`,
+      resource: `${guardrails.length} guardrail${guardrails.length === 1 ? "" : "s"}`,
       evidence: { locator: 'ListGuardrails', detail: 'all versions DRAFT' },
     });
   }
@@ -295,7 +295,7 @@ export function analyzeBedrock(input: BedrockInput): AnalysisResult {
     notes.push({
       ruleId: BEDROCK_RULE_IDS.guardrailNotProvablyEnforced,
       title: `${guardrails.length} guardrail${guardrails.length === 1 ? '' : 's'} configured — but nothing here proves they run`,
-      resource: `${guardrails.length} guardrails`,
+      resource: `${guardrails.length} guardrail${guardrails.length === 1 ? "" : "s"}`,
       evidence: {
         locator: 'ListGuardrails',
         detail: guardrails

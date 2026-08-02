@@ -31,7 +31,7 @@ const guardrail = (over: Partial<Guardrail> = {}): Guardrail => ({
   ...over,
 });
 
-const ids = (r: { findings: { ruleId: string }[] }) => r.findings.map((f) => f.ruleId);
+const ids = (r: { findings: readonly { ruleId: string }[] }) => r.findings.map((f) => f.ruleId);
 
 // ── logging off: the headline ──────────────────────────────────────────
 

@@ -1,0 +1,43 @@
+# Rules-engine gate.
+#
+# Three steps, in the order they catch things. Typecheck runs first because
+# vitest strips types without checking them — the suite can be green while a
+# module violates its own interface, which is how ten TS2345 errors sat in
+# bedrock.test.ts unnoticed. Build runs last because it is the artefact a
+# consumer actually installs, and it is the step that fails if a relative
+# import stops resolving.
+name: rules
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install
+        run: npm install
+
+      - name: Typecheck — vitest does not do this
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build — proves the published entry point resolves
+        run: npm run build
+
+      - name: Run the example against the built output
+        run: node examples/run.mjs

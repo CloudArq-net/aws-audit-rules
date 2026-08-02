@@ -1,19 +1,40 @@
 {
   "name": "@cloudarq/aws-audit-rules",
   "version": "0.1.0",
-  "description": "Client-side AWS audit rules \u2014 parse a paste of AWS CLI output and report only what that output can prove. No network, no dependencies.",
+  "description": "Client-side AWS audit rules — parse a paste of AWS CLI output and report only what that output can prove. No network, no dependencies.",
   "license": "MIT",
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
-    "src",
+    "dist",
     "RULES.md",
     "README.md",
     "LICENSE"
   ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "esbuild src/index.ts --bundle --format=esm --platform=neutral --outfile=dist/index.js && dts-bundle-generator -o dist/index.d.ts src/index.ts --no-banner",
+    "example": "npm run build && node examples/run.mjs",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "devDependencies": {
+    "dts-bundle-generator": "^9.5.1",
+    "esbuild": "^0.27.3",
+    "typescript": "~5.9.3",
+    "vitest": "^2.1.8"
   },
   "keywords": [
     "aws",
@@ -25,8 +46,14 @@
   "sideEffects": false,
   "repository": {
     "type": "git",
-    "url": "https://github.com/cloudarq/aws-audit-rules"
+    "url": "git+https://github.com/CloudArq-net/aws-audit-rules.git"
   },
-  "homepage": "https://cloudarq.net/tools/aws-auditor",
+  "bugs": {
+    "url": "https://github.com/CloudArq-net/aws-audit-rules/issues"
+  },
+  "homepage": "https://github.com/CloudArq-net/aws-audit-rules#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "author": "Abdallah Khaldi"
 }

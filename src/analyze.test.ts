@@ -121,12 +121,12 @@ describe('messy real-world pastes', () => {
 }`;
 
   it('ignores a shell prompt and the command in front of the JSON', () => {
-    const text = `abdallah@mac ~ % aws ec2 describe-security-groups\n{\n${GROUPS}`;
+    const text = `user@host ~ % aws ec2 describe-security-groups\n{\n${GROUPS}`;
     expect(kinds(text)).toContain(INPUT_KINDS.securityGroups);
   });
 
   it('ignores trailing shell noise', () => {
-    const text = `{\n${GROUPS}\nabdallah@mac ~ %`;
+    const text = `{\n${GROUPS}\nuser@host ~ %`;
     expect(kinds(text)).toContain(INPUT_KINDS.securityGroups);
   });
 
@@ -135,7 +135,7 @@ describe('messy real-world pastes', () => {
     // truncated copies separated by `:` prompts — and the final complete
     // screen is missing the opening brace that scrolled off the top.
     const text = [
-      'abdallah@mac ~ % aws ec2 describe-security-groups',
+      'user@host ~ % aws ec2 describe-security-groups',
       '{',
       '    "SecurityGroups": [',
       '        {',
@@ -254,7 +254,7 @@ describe('the shapes people actually paste', () => {
 
   it('everything wrong at once', () => {
     const numbered = SG_DOC.split('\n').map((l, i) => `${i + 1} | ${l}`).join('\r\n');
-    const text = `abdallah@mac ~ % aws ec2 describe-security-groups\r\n\`\`\`json\r\n${numbered}\r\n\`\`\`\r\nabdallah@mac ~ %`;
+    const text = `user@host ~ % aws ec2 describe-security-groups\r\n\`\`\`json\r\n${numbered}\r\n\`\`\`\r\nuser@host ~ %`;
     expect(sawGroups(text)).toBe(true);
   });
 

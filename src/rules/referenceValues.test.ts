@@ -1,8 +1,15 @@
 /**
- * Reference values over a sanitized capture of a real account, rather than a
- * hand-written fixture. Real output contains shapes that are easy to miss —
- * notably an `IpProtocol: "-1"` rule with the port keys absent, which breaks
- * anything assuming FromPort exists.
+ * Reference values over real CLI output rather than a hand-written fixture.
+ * Real output contains shapes that are easy to miss — notably an
+ * `IpProtocol: "-1"` rule with the port keys absent, which breaks anything
+ * assuming FromPort exists.
+ *
+ * Identifiers were stripped when it was captured (account id, sg/vpc ids,
+ * descriptions, CIDRs), and the service ports were renumbered afterwards: 22,
+ * 80 and 443 say nothing about anyone, but a tunnel port next to a signalling
+ * port next to a media range identifies what the account runs even with every
+ * identifier gone. The tests here grade protocol, world-openness and range
+ * width, none of which the renumbering changes.
  */
 
 import { describe, expect, it } from 'vitest';

@@ -221,7 +221,11 @@ export function analyzeVolumes(volumes: readonly Volume[]): AnalysisResult {
     examined: {
       source: 'volumes',
       resourceCount: volumes.length,
-      rulesRun: [COST_RULE_IDS.unattachedVolume, COST_RULE_IDS.gp2ToGp3],
+      rulesRun: [
+        COST_RULE_IDS.unencryptedVolume,
+        COST_RULE_IDS.unattachedVolume,
+        COST_RULE_IDS.gp2ToGp3,
+      ],
     },
   };
 }
@@ -467,7 +471,11 @@ export function analyzeSnapshots(
     examined: {
       source: 'snapshots',
       resourceCount: snapshots.length,
-      rulesRun: [COST_RULE_IDS.oldSnapshot, COST_RULE_IDS.backupRetention],
+      rulesRun: [
+        COST_RULE_IDS.oldSnapshot,
+        COST_RULE_IDS.backupRetention,
+        COST_RULE_IDS.snapshotSourceGone,
+      ],
     },
   };
 }

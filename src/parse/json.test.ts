@@ -17,14 +17,17 @@ describe('a parse error never contains the input', () => {
     const malformed = `{"IpRanges": [{"CidrIp": "${SECRET}"},,]}`;
 
     // Check the native error really does echo the input, so this can't pass
-    // for the wrong reason on some future engine.
+    // for the wrong reason on some future engine. `length > 0` used to stand
+    // in for this and did not: V8 truncates to a ~15-character tail, so the
+    // whole SECRET never appears in the native message either, and the canary
+    // assertion below was passing without the leak channel being real.
     let nativeMessage = '';
     try {
       JSON.parse(malformed);
     } catch (e) {
       nativeMessage = (e as Error).message;
     }
-    expect(nativeMessage.length).toBeGreaterThan(0);
+    expect(nativeMessage).toContain('3.77/32');
 
     try {
       safeParseJson(malformed);
@@ -111,5 +114,50 @@ describe('valid input still parses', () => {
   it('round-trips a real-shaped response', () => {
     const doc = { SecurityGroups: [{ GroupId: 'sg-1', IpPermissions: [] }] };
     expect(safeParseJson(JSON.stringify(doc))).toEqual(doc);
+  });
+});
+
+/**
+ * README.md and the header of `json.ts` both print a worked example of V8
+ * echoing pasted text back inside SyntaxError.message. That example is the
+ * evidence for the privacy claim, so a reader will run it.
+ *
+ * The previous one stopped reproducing: V8 rewrote its JSON messages around
+ * Node 20.6 and `{"CidrIp": "203.0.113.7/32",,}` now yields "Expected
+ * double-quoted property name in JSON at position 28" — no input at all. The
+ * documentation was making a claim the reader's own runtime disproved.
+ */
+describe('the documented example still demonstrates the risk', () => {
+  const DOCUMENTED = '{"SecurityGroups": [{"GroupId": sg-0abc}]}';
+
+  it('V8 still echoes the input for it', () => {
+    let message = '';
+    try {
+      JSON.parse(DOCUMENTED);
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    // If this fails, the engine changed and both documents are now claiming
+    // something a reader cannot reproduce. Pick a new example, don't delete
+    // the assertion.
+    expect(message).toContain('sg-0abc');
+  });
+
+  it('and safeParseJson keeps none of it', () => {
+    try {
+      safeParseJson(DOCUMENTED);
+      throw new Error('expected safeParseJson to throw');
+    } catch (err) {
+      expect(err).toBeInstanceOf(ParseError);
+      // Serialised, because reporters send the whole object — not just
+      // `.message` — and `cause` is the channel that caught us before.
+      const wire = JSON.stringify({
+        message: (err as Error).message,
+        diagnosis: (err as ParseError).diagnosis,
+        ...(err as object),
+      });
+      expect(wire).not.toContain('sg-0abc');
+      expect(wire).not.toContain('SecurityGroups');
+    }
   });
 });

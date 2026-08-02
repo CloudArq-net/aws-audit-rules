@@ -23,11 +23,10 @@ Input: `aws ec2 describe-security-groups`
 
 | Rule | Fires when |
 |---|---|
-| `sg.ssh-open-to-world` | A rule reaches port 22 from `0.0.0.0/0` or `::/0` |
-| `sg.rdp-open-to-world` | Same, port 3389 |
-| `sg.all-ports-open-to-world` | An all-ports or all-traffic rule from the world |
-| `sg.sensitive-port-open-to-world` | A database, cache, or admin port from the world |
-| `sg.ipv6-only-exposure` | Open on `::/0` but **not** `0.0.0.0/0` |
+| `sg.sensitive-port-open` | A database, cache, or admin port reaches the world. SSH (22) and RDP (3389) are the first two entries in that list |
+| `sg.all-traffic-open` | An all-ports or all-traffic rule from the world |
+| `sg.ipv6-only-exposure` | One of those ports is open on `::/0` but **not** `0.0.0.0/0` |
+| `sg.prefix-list-unexaminable` | A rule's source is a managed prefix list, whose contents aren't in the response (a gap) |
 | `sg.default-group-has-rules` | The `default` group has rules (a note, not a finding) |
 | `sg.all-traffic-from-single-host` | Every port open to one `/32` or `/128` (a note) |
 | `sg.rule-already-covered` | A rule a broader rule in the same group already allows (a note) |

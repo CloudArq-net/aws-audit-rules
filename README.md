@@ -6,6 +6,14 @@ opens a socket.
 Give it the JSON from a read-only `aws` command and it reports what that JSON
 can prove — and what it can't, with the command that would answer it.
 
+```bash
+git clone https://github.com/CloudArq-net/aws-audit-rules
+cd aws-audit-rules
+npm install
+npm test
+npm run example    # runs the rules over a sample paste and prints the output
+```
+
 ```ts
 import { analyzeAll } from '@cloudarq/aws-audit-rules';
 
@@ -16,6 +24,8 @@ result.notes;      // worth seeing, not wrong
 result.gaps;       // what this input couldn't answer, and how to answer it
 result.examined;   // what was actually read
 ```
+
+The import above works after the first npm publish; until then use the clone.
 
 Paste one command's output or several, in any order, with or without
 separators. It works out which is which from the envelope key.
@@ -95,8 +105,8 @@ Most of these are why the test suite is the size it is.
 V8 embeds a slice of the offending text in `SyntaxError.message`:
 
 ```
-JSON.parse('{"CidrIp": "203.0.113.7/32",,}')
-→ SyntaxError: Unexpected token ',', ..."3.7/32",,}"... is not valid JSON
+JSON.parse('{"SecurityGroups": [{"GroupId": sg-0abc}]}')
+→ SyntaxError: Unexpected token 's', ..."GroupId": sg-0abc}]}" is not valid JSON
 ```
 
 Anything that captures errors would then be holding a piece of whatever was
@@ -114,10 +124,11 @@ truncated"*.
 npm test
 ```
 
-231 of them. `rules/referenceValues.test.ts` runs against a sanitized capture of a real
-account rather than a hand-written fixture, because real output contains shapes
-that are easy to miss — an `IpProtocol: "-1"` rule with the port keys absent
-breaks anything assuming `FromPort` exists.
+247 of them. `rules/referenceValues.test.ts` runs against real CLI output with
+the identifiers stripped and the service ports renumbered, rather than a
+hand-written fixture, because real output contains shapes that are easy to miss
+— an `IpProtocol: "-1"` rule with the port keys absent breaks anything assuming
+`FromPort` exists.
 
 ## Where this comes from
 
@@ -125,5 +136,15 @@ These rules power the free auditor at
 [cloudarq.net/tools/aws-auditor](https://cloudarq.net/tools/aws-auditor), which
 runs entirely in the browser. Published because a page claiming nothing you
 paste leaves your machine should let you check.
+
+## Contributing
+
+Three things the engine deliberately does not do yet are open as issues —
+resolving managed prefix lists, region-aware pricing, and S3 bucket-policy
+rules. Each is a real limit rather than a placeholder.
+
+If you add a rule: write the test first, and if the rule needs a fact the
+input can't carry, it belongs in `Gap` or `unknowable` rather than in a
+guess. `RULES.md` has the full conventions.
 
 MIT.

@@ -3,8 +3,8 @@
  *
  * V8 puts a slice of the offending text into the error message:
  *
- *   JSON.parse('{"CidrIp": "203.0.113.7/32",,}')
- *   → SyntaxError: Unexpected token ',', ..."3.7/32",,}"... is not valid JSON
+ *   JSON.parse('{"SecurityGroups": [{"GroupId": sg-0abc}]}')
+ *   → SyntaxError: Unexpected token 's', ..."GroupId": sg-0abc}]}" is not valid JSON
  *
  * Anything that captures errors would then be holding a piece of whatever was
  * pasted. Catching it here and rethrowing our own error is more reliable than

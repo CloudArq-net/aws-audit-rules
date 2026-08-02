@@ -22,8 +22,8 @@
       "IpPermissions": [
         {
           "IpProtocol": "udp",
-          "FromPort": 1194,
-          "ToPort": 1194,
+          "FromPort": 40001,
+          "ToPort": 40001,
           "UserIdGroupPairs": [],
           "IpRanges": [
             {
@@ -35,8 +35,8 @@
         },
         {
           "IpProtocol": "tcp",
-          "FromPort": 945,
-          "ToPort": 945,
+          "FromPort": 40002,
+          "ToPort": 40002,
           "UserIdGroupPairs": [],
           "IpRanges": [
             {
@@ -48,8 +48,8 @@
         },
         {
           "IpProtocol": "tcp",
-          "FromPort": 943,
-          "ToPort": 943,
+          "FromPort": 40003,
+          "ToPort": 40003,
           "UserIdGroupPairs": [],
           "IpRanges": [
             {
@@ -259,8 +259,8 @@
         },
         {
           "IpProtocol": "udp",
-          "FromPort": 5060,
-          "ToPort": 5060,
+          "FromPort": 40004,
+          "ToPort": 40004,
           "UserIdGroupPairs": [],
           "IpRanges": [
             {
@@ -272,8 +272,8 @@
         },
         {
           "IpProtocol": "udp",
-          "FromPort": 10000,
-          "ToPort": 20000,
+          "FromPort": 40010,
+          "ToPort": 40020,
           "UserIdGroupPairs": [],
           "IpRanges": [
             {
