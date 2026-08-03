@@ -1,0 +1,102 @@
+# Publish to npm on a version tag, using trusted publishing (OIDC).
+#
+# There is no npm token anywhere — not in the repo, not in Actions secrets, not
+# on anyone's laptop. GitHub mints a short-lived, cryptographically-signed OIDC
+# token scoped to this exact workflow in this exact repository, and npm accepts
+# it only because the package is configured to trust that pair. A token that
+# cannot be copied out and cannot be replayed is the whole point: the usual way
+# a small package gets hijacked is a long-lived publish credential leaking.
+#
+# It also means every release carries a provenance attestation automatically —
+# a public, verifiable record of which commit and which workflow run produced
+# the tarball. npm shows it on the package page. For a package whose entire
+# pitch is "this runs locally and nothing leaves your machine", being able to
+# prove what is in the tarball matters more than usual.
+#
+# Requirements, all load-bearing:
+#   * `id-token: write`      — without it there is no OIDC token to present
+#   * npm >= 11.5.1          — earlier CLIs do not know how to use one
+#   * Node >= 22.14.0        — node-version 24 below satisfies both
+#
+# Setup, done once on npmjs.com (package -> Settings -> Trusted Publisher):
+#   Publisher        GitHub Actions
+#   Repository       CloudArq-net/aws-audit-rules
+#   Workflow file    publish.yml          <- filename only, not the full path
+#   Environment      (leave blank)
+#   Allowed actions  npm publish
+#
+# Releasing:
+#   npm version patch      # bumps package.json and creates the v0.1.1 tag
+#   git push --follow-tags
+#
+# The tag is what fires this. Pushing to main does not publish, so a docs commit
+# cannot ship a release by accident.
+
+name: publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write # required for OIDC — publishing fails without it
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
+
+      # setup-node pins whatever npm ships with the Node build. Trusted
+      # publishing needs >= 11.5.1, so ask for it explicitly rather than
+      # inheriting it and finding out during a release.
+      - name: Ensure npm supports trusted publishing
+        run: |
+          npm install -g npm@latest
+          npm --version
+
+      - name: Install
+        run: npm ci
+
+      # The same three gates as the `rules` workflow, repeated here on purpose.
+      # `rules` runs on branches; a tag can be pushed from anywhere, including a
+      # commit that never sat on main. The artefact must be re-proven at the
+      # moment it is published, not trusted because a sibling workflow was green
+      # on some other commit.
+      - name: Typecheck — vitest does not do this
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build — proves the published entry point resolves
+        run: npm run build
+
+      # Refuse to publish a tag that disagrees with package.json. Without this,
+      # `git tag v0.2.0` on a 0.1.0 package silently republishes 0.1.0 and the
+      # tag becomes a lie about what is on the registry.
+      - name: Tag must match package.json version
+        run: |
+          PKG="v$(node -p "require('./package.json').version")"
+          TAG="${GITHUB_REF_NAME}"
+          echo "package.json: $PKG"
+          echo "tag:          $TAG"
+          if [ "$PKG" != "$TAG" ]; then
+            echo "::error::Tag $TAG does not match package.json version $PKG."
+            exit 1
+          fi
+
+      # No NODE_AUTH_TOKEN, no NPM_TOKEN. OIDC supplies the credential, and
+      # provenance is attached automatically — `--provenance` is not needed.
+      - name: Publish
+        run: npm publish

@@ -1,10 +1,18 @@
 # @cloudarq/aws-audit-rules
 
+[![npm](https://img.shields.io/npm/v/@cloudarq/aws-audit-rules)](https://www.npmjs.com/package/@cloudarq/aws-audit-rules)
+
 Audit rules for AWS CLI output. Pure functions, no dependencies, nothing that
 opens a socket.
 
 Give it the JSON from a read-only `aws` command and it reports what that JSON
 can prove — and what it can't, with the command that would answer it.
+
+```bash
+npm install @cloudarq/aws-audit-rules
+```
+
+Or clone it and run the rules over a sample paste:
 
 ```bash
 git clone https://github.com/CloudArq-net/aws-audit-rules
@@ -24,8 +32,6 @@ result.notes;      // worth seeing, not wrong
 result.gaps;       // what this input couldn't answer, and how to answer it
 result.examined;   // what was actually read
 ```
-
-The import above works after the first npm publish; until then use the clone.
 
 Paste one command's output or several, in any order, with or without
 separators. It works out which is which from the envelope key.
