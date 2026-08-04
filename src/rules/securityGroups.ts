@@ -137,17 +137,90 @@ export interface SgAnalysis {
   readonly examined: AnalysisResult['examined'];
 }
 
-/** Ports worth flagging. 80 and 443 are deliberately absent — that's a web server. */
+/**
+ * Ports worth flagging. 80 and 443 are deliberately absent — that's a web server.
+ *
+ * This list must cover every port the production `open_sensitive_ports` scanner
+ * grades, PLUS SSH and RDP. The scanner excludes those two because it has
+ * dedicated checks that grade their severity from network-interface attachment
+ * data; a pasted rule set carries no attachment data, so here they belong with
+ * everything else.
+ *
+ * The relationship is enforced by a parity test in the CloudArq repo, which
+ * reads the scanner's own port table and fails on anything present there and
+ * missing here. It was written on 2026-08-04 because the two had quietly
+ * diverged — this array held nine ports while the scanner graded forty-eight —
+ * so a security group exposing the Docker API, the Kubernetes API, kubelet,
+ * etcd, SMB or Telnet to the whole internet was reported here as "Nothing
+ * flagged", under a heading promising that was a real result rather than a
+ * failure to read the input.
+ *
+ * Names differ from the scanner's on purpose: it says "MSSQL" to an operator
+ * reading an audit report, this says "SQL Server" to someone who has just
+ * arrived. Parity is over the port set, never the wording.
+ */
 const SENSITIVE_PORTS: ReadonlyArray<readonly [number, string, string]> = [
+  // ── remote access ──
   [22, 'SSH', 'Remote shell access. Exposed SSH is scanned and brute-forced continuously.'],
+  [23, 'Telnet', 'Unencrypted remote shell — the password crosses the network in clear text.'],
   [3389, 'RDP', 'Remote desktop. A primary ransomware entry point when reachable from the internet.'],
+  [5900, 'VNC', 'Remote desktop, frequently deployed with a weak password or none at all.'],
+
+  // ── file and directory services ──
+  [21, 'FTP', 'Credentials and file contents both travel in clear text.'],
+  [445, 'SMB', 'Windows file sharing — the vector WannaCry and NotPetya spread over.'],
+  [139, 'NetBIOS session', 'Legacy Windows file sharing, superseded by 445 and rarely needed.'],
+  [137, 'NetBIOS name service', 'Leaks host and share names, and has no authentication.'],
+  [2049, 'NFS', 'Network file share. Classic NFS trusts the client to say who the user is.'],
+  [389, 'LDAP', 'Directory service, unencrypted. Often holds the credentials for everything else.'],
+  [636, 'LDAPS', 'Directory service over TLS — encrypted, but still a directory to enumerate.'],
+
+  // ── databases ──
   [5432, 'PostgreSQL', 'Database port. Should reach only your application tier.'],
   [3306, 'MySQL', 'Database port. Should reach only your application tier.'],
   [1433, 'SQL Server', 'Database port. Should reach only your application tier.'],
+  [1521, 'Oracle', 'Database listener — it will also name the databases sitting behind it.'],
   [27017, 'MongoDB', 'Historically shipped without authentication; a common source of public data leaks.'],
+  [27018, 'MongoDB shard', 'A shard member holds the same data as the primary port.'],
+  [9042, 'Cassandra', 'Database port. Authentication is disabled in the default configuration.'],
+  [5984, 'CouchDB', 'Before 3.0, CouchDB started in "admin party" mode with no authentication at all.'],
+  [8086, 'InfluxDB', 'Time-series database. Authentication was off by default before 2.0.'],
+
+  // ── caches, search, message queues ──
   [6379, 'Redis', 'Unauthenticated by default before Redis 6 — an open port is often an open database.'],
-  [9200, 'Elasticsearch', 'No authentication in the open-source distribution by default.'],
   [11211, 'Memcached', 'No authentication, and amplification-attack traffic is routinely reflected off it.'],
+  [9200, 'Elasticsearch', 'No authentication in the open-source distribution by default.'],
+  [9300, 'Elasticsearch transport', 'The node-to-node channel — reaching it can mean joining the cluster.'],
+  [5601, 'Kibana', 'Reads the whole Elasticsearch index behind it; older releases shipped with no login.'],
+  [5672, 'AMQP / RabbitMQ', 'Message broker. The default guest account is widely left in place.'],
+  [15672, 'RabbitMQ management', 'Management UI — it can read, publish to and purge every queue.'],
+  [9092, 'Kafka', 'Message broker. A PLAINTEXT listener accepts any client that can reach it.'],
+  [2181, 'ZooKeeper', 'Coordination service for Kafka and Hadoop; unauthenticated by default, and writes reconfigure the cluster.'],
+
+  // ── orchestration and infrastructure control planes ──
+  [2375, 'Docker API (plaintext)', 'An unauthenticated Docker daemon: anyone who reaches it can start a privileged container and take the host.'],
+  [2376, 'Docker API (TLS)', 'Docker daemon over TLS — still full control of the host unless client certificates are enforced.'],
+  [6443, 'Kubernetes API', 'The cluster control plane. Reachable and misconfigured means a full cluster takeover.'],
+  [10250, 'kubelet', 'The node agent API, which historically allowed running commands inside any pod on the node.'],
+  [2379, 'etcd client', 'The key-value store behind Kubernetes — it holds every secret in the cluster.'],
+  [2380, 'etcd peer', 'The etcd replication channel. Exposure allows joining the cluster.'],
+  [4505, 'SaltStack publish', 'A SaltStack master: remote command execution across every minion is its purpose.'],
+  [4506, 'SaltStack return', 'The SaltStack return channel — the same blast radius as the publish port.'],
+  [50070, 'Hadoop NameNode', 'Browses HDFS, and older releases allowed writes without authentication.'],
+
+  // ── management, monitoring and admin surfaces ──
+  [161, 'SNMP', 'Device management. The default "public" community string exposes the full device configuration.'],
+  [135, 'MSRPC', 'The Windows RPC endpoint mapper — it enumerates services, and has a long remote-code-execution history.'],
+  [943, 'OpenVPN admin UI', 'Administrative control of your VPN server.'],
+  [945, 'OpenVPN cluster control', 'An OpenVPN Access Server cluster channel, meant to stay internal to the cluster.'],
+  [7001, 'WebLogic', 'The WebLogic admin console, with a long run of unauthenticated remote-code-execution CVEs.'],
+  [9000, 'SonarQube / admin', 'An admin UI that holds your source code; default credentials are common.'],
+  [9090, 'Prometheus', 'No authentication by design, and the metrics describe your entire estate.'],
+  [3000, 'Grafana / dev server', 'Grafana or a development server. Default admin/admin is still widespread.'],
+  [8000, 'HTTP-alt', 'A common alternate HTTP port — usually an admin panel or a development server left running.'],
+  [8080, 'HTTP-alt', 'A common alternate HTTP port — proxies, app servers and admin consoles all land here.'],
+  [8443, 'HTTPS-alt', 'An alternate HTTPS port, typically a management console.'],
+  [8888, 'Notebook / admin', 'Jupyter and similar. A notebook is a remote Python shell.'],
 ];
 
 /** Rules this module runs, surfaced so a clean result can prove it worked. */

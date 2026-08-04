@@ -1,6 +1,6 @@
 {
   "name": "@cloudarq/aws-audit-rules",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Client-side AWS audit rules — parse a paste of AWS CLI output and report only what that output can prove. No network, no dependencies.",
   "license": "MIT",
   "type": "module",
